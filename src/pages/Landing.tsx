@@ -129,9 +129,9 @@ function Hero() {
 
   return (
     <section className="hero" ref={section}>
-      <h1 className={`hero-title${ready ? " is-in" : ""}`}>
-        <span>Skin</span>
-        <span>Schematic</span>
+      <h1 className={`hero-title${ready ? " is-in" : ""}`} aria-label="Skin Schematic">
+        <span aria-hidden="true">Skin</span>
+        <span aria-hidden="true">Schematic</span>
       </h1>
       <div className={`hero-stage${ready ? " is-in" : ""}`} ref={host} aria-hidden="true" />
       <div className="hero-foot">

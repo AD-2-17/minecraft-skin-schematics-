@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
 import { BLOCK_BY_ID, getBlock, PEDESTAL_BLOCKS, STYLES, VERSIONS, availableIn, getVersion } from "../../lib/blocks/blocks";
 import { hexString } from "../../lib/blocks/color";
 import { JOINT_LABELS, POSE_PRESETS, mirrorPose, restPose, type JointId, type LimbJoint, type Pose } from "../../lib/rig/pose";
@@ -216,6 +216,7 @@ export function PosePanel({
 }) {
   const pose = settings.pose;
   const setValue = (key: JointKey, v: number, commit: boolean) => {
+    setJoint(joint);
     const next: Pose = { ...pose, [joint]: { ...pose[joint], [key]: v } };
     update({ pose: next, poseId: null }, { commit, live: !commit });
   };
@@ -625,8 +626,4 @@ export function ExportPanel({
       </Section>
     </>
   );
-}
-
-export function Empty({ children }: { children: ReactNode }) {
-  return <p className="note">{children}</p>;
 }

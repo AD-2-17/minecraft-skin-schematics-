@@ -55,7 +55,13 @@ export default function Studio() {
     saved?.skin ? { pixels: null, dataUrl: saved.skin.dataUrl, name: saved.skin.name } : defaultSkin(),
   );
   const [tab, setTab] = useState<Tab>("skin");
-  const [joint, setJoint] = useState<JointId>("rightArm");
+  const [joint, setJointState] = useState<JointId>("rightArm");
+  // Only fade the rest of the statue once someone is actually working on a part.
+  const [focus, setFocus] = useState(false);
+  const setJoint = useCallback((j: JointId) => {
+    setJointState(j);
+    setFocus(true);
+  }, []);
   const [build, setBuild] = useState<BuildPayload | null>(null);
   const [building, setBuilding] = useState(false);
   const [live, setLive] = useState(false);
@@ -70,7 +76,7 @@ export default function Studio() {
   const engine = useRef<StatueEngine | null>(null);
   const view = useRef<StatueView | null>(null);
   const viewportEl = useRef<HTMLDivElement>(null);
-  const framed = useRef(false);
+  const framed = useRef<number[] | null>(null);
   const history = useRef<{ past: Settings[]; future: Settings[]; committed: Settings }>({ past: [], future: [], committed: settings });
   const [, forceHistory] = useState(0);
 
@@ -116,8 +122,13 @@ export default function Studio() {
       if (cancelled || !b) return;
       setBuild(b);
       setBuilding(false);
-      view.current?.setBuild(b, !framed.current, scale);
-      framed.current = true;
+      // Re-frame on first build, or when a committed change makes the statue much bigger or smaller.
+      const size = [b.sx / scale, b.sy / scale, b.sz / scale];
+      const prev = framed.current;
+      const changed = !prev || size.some((v, i) => Math.abs(v - prev[i]) / Math.max(prev[i], 8) > 0.2);
+      const refit = !prev || (!live && changed);
+      view.current?.setBuild(b, refit, scale);
+      if (refit) framed.current = size;
     });
     return () => {
       cancelled = true;
@@ -168,11 +179,15 @@ export default function Studio() {
       setJoint(SEGMENT_PART[SEGMENT_ORDER[seg - 1]]);
       setTab("pose");
     };
-    if (tab !== "pose" || !build) return v.setHighlight(null);
+    if (tab !== "pose" || !build || !focus) return v.setHighlight(null);
     const segs = new Set<number>();
     SEGMENT_ORDER.forEach((id, i) => SEGMENT_PART[id] === joint && segs.add(i + 1));
     v.setHighlight(segs);
-  }, [tab, joint, build]);
+  }, [tab, joint, build, focus, setJoint]);
+
+  useEffect(() => {
+    if (tab !== "pose") setFocus(false);
+  }, [tab]);
 
   const update: Update = useCallback((patch, opts = {}) => {
     setSettings((prev) => {

@@ -46,7 +46,7 @@ function offscreen() {
   return shared;
 }
 
-function renderOnce(mesh: MeshArrays, size: [number, number, number], w: number, h: number, yaw = 28) {
+function renderOnce(mesh: MeshArrays, size: [number, number, number], w: number, h: number, yaw = -28) {
   const { renderer, scene, camera, material } = offscreen();
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
@@ -68,7 +68,7 @@ export function renderThumbnail(mesh: MeshArrays, size: [number, number, number]
 
 /** Square ARGB pixels for Litematica's schematic browser preview. */
 export function renderPreviewArgb(mesh: MeshArrays, size: [number, number, number], px = 140): Int32Array {
-  const r = renderOnce(mesh, size, px, px, 30);
+  const r = renderOnce(mesh, size, px, px, -30);
   const gl = r.getContext();
   const buf = new Uint8Array(px * px * 4);
   gl.readPixels(0, 0, px, px, gl.RGBA, gl.UNSIGNED_BYTE, buf);

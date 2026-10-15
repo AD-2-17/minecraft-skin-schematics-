@@ -20,7 +20,8 @@ function shadowTexture() {
 
 export type ViewPreset = "front" | "side" | "back" | "angle";
 
-const VIEW_YAW: Record<ViewPreset, number> = { front: 0, side: 90, back: 180, angle: 32 };
+// 3/4 view from the player's right, where items are held by default
+const VIEW_YAW: Record<ViewPreset, number> = { front: 0, side: -90, back: 180, angle: -32 };
 
 export class StatueView {
   readonly renderer: THREE.WebGLRenderer;

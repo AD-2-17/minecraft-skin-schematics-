@@ -807,7 +807,7 @@
 
 .facts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1.5fr 1fr 1fr;
   margin: 16px 0 0;
   border: 1px solid var(--line-2);
   border-radius: 10px;

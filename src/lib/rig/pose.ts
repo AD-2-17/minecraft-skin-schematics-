@@ -401,12 +401,12 @@ export const POSE_PRESETS: PosePreset[] = [
   {
     id: "guard",
     name: "Guard",
-    itemAngle: -100,
+    itemAngle: -55,
     pose: makePose({
-      head: { pitch: -4 },
-      rightArm: { pitch: 62, yaw: -18, bend: 40 },
-      leftArm: { pitch: 30, roll: 10, bend: 50 },
-      rightLeg: { pitch: 14, roll: 4 },
+      head: { pitch: -2, yaw: -6 },
+      rightArm: { pitch: 48, roll: 6, bend: 52 },
+      leftArm: { pitch: 18, roll: 8, bend: 30 },
+      rightLeg: { pitch: 16, roll: 4 },
       leftLeg: { pitch: -14, roll: 4 },
     }),
   },
