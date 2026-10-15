@@ -21,5 +21,6 @@ function localApi(): Plugin {
 export default defineConfig({
   plugins: [react(), localApi()],
   worker: { format: "es" },
+  build: { chunkSizeWarningLimit: 800 },
   test: { include: ["tests/**/*.test.ts"] },
 });

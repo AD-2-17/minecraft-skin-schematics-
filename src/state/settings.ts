@@ -1,4 +1,4 @@
-import { DEFAULT_STYLE, DEFAULT_VERSION, getStyle, getVersion } from "../lib/blocks/blocks";
+import { availableIn, BLOCK_BY_ID, DEFAULT_STYLE, DEFAULT_VERSION, getStyle, getVersion } from "../lib/blocks/blocks";
 import type { StatueSettings } from "../lib/build";
 import { getPreset, restPose, type Pose } from "../lib/rig/pose";
 import type { SkinModel } from "../lib/skin/layout";
@@ -50,7 +50,7 @@ export function toStatueSettings(s: Settings, scaleOverride?: number): StatueSet
     version: s.version,
     maxBlocks: s.maxBlocks,
     hollow: s.hollow,
-    pedestal: s.pedestal,
+    pedestal: s.pedestal && BLOCK_BY_ID[s.pedestal] && availableIn(BLOCK_BY_ID[s.pedestal], getVersion(s.version)) ? s.pedestal : null,
   };
 }
 

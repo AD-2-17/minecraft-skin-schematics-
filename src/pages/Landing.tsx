@@ -6,11 +6,14 @@ import { hexString } from "../lib/blocks/color";
 import { getPreset, lerpPose, makePose, restPose, type Pose } from "../lib/rig/pose";
 import { normalizeSkin } from "../lib/skin/skin";
 import { paintSteve } from "../lib/skin/steve";
-import { Stage } from "../lib/three/stage";
-import { renderThumbnail } from "../lib/three/geometry";
+import type { Stage } from "../lib/three/stage";
 import { buildMesh } from "../lib/voxel/mesh";
 import { voxelize } from "../lib/voxel/voxelize";
 import { ITEM_KINDS, ITEM_LABELS } from "../lib/voxel/items";
+
+// Three.js loads after first paint; the page reads fine without it.
+const loadStage = () => import("../lib/three/stage").then((m) => m.Stage);
+const loadThumbs = () => import("../lib/three/geometry").then((m) => m.renderThumbnail);
 import { spriteUrl } from "./studio/panels";
 import "./landing.css";
 
@@ -95,7 +98,19 @@ function Hero() {
   const section = useInView<HTMLElement>((v) => (v ? stage.current?.play() : stage.current?.pause()));
 
   useEffect(() => {
-    const s = new Stage(host.current!, STEVE, "classic", null, { height: 0.78, centerY: 0.51 });
+    let disposed = false;
+    let cleanup = () => {};
+    loadStage().then((StageClass) => {
+      if (disposed || !host.current) return;
+      cleanup = startHero(new StageClass(host.current, STEVE, "classic", null, { height: 0.78, centerY: 0.51 }));
+    });
+    return () => {
+      disposed = true;
+      cleanup();
+    };
+  }, []);
+
+  function startHero(s: Stage) {
     stage.current = s;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     s.onFrame = (t) => {
@@ -125,7 +140,7 @@ function Hero() {
       s.dispose();
       stage.current = null;
     };
-  }, []);
+  }
 
   return (
     <section className="hero" ref={section}>
@@ -175,27 +190,14 @@ function Sequence() {
   const stage = useRef<Stage | null>(null);
   const progress = useRef(0);
   const [phase, setPhase] = useState(0);
-  const sticky = useInView<HTMLDivElement>((v) => (v ? stage.current?.play() : stage.current?.pause()));
+  const visible = useRef(false);
+  const sticky = useInView<HTMLDivElement>((v) => {
+    visible.current = v;
+    if (v) stage.current?.play();
+    else stage.current?.pause();
+  });
 
   useEffect(() => {
-    const strike = getPreset("strike")!;
-    const target: Pose = strike.pose;
-    const s = new Stage(host.current!, STEVE, "classic", { kind: "sword", material: "diamond", hand: "right", angle: strike.itemAngle ?? 0 }, { height: 0.56, centerY: 0.6 });
-    stage.current = s;
-    let shown = 0;
-    s.onFrame = (t) => {
-      const p = progress.current;
-      shown += (p - shown) * 0.12;
-      const x = shown;
-      const explode = smooth(0.06, 0.32, x) * (1 - smooth(0.46, 0.7, x));
-      const assemble = smooth(0.5, 0.78, x);
-      const pose = lerpPose(restPose(), target, assemble);
-      pose.head.pitch += Math.sin(t * 1.3) * 0.8;
-      const framing = { height: 0.62 - 0.14 * assemble, centerY: 0.56 + 0.1 * assemble };
-      return { pose, explode, item: smooth(0.6, 0.9, x), itemAngle: strike.itemAngle ?? 0, yaw: -28 + x * 52, framing };
-    };
-    s.render();
-
     const onScroll = () => {
       const el = track.current!;
       const r = el.getBoundingClientRect();
@@ -207,13 +209,39 @@ function Sequence() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+    let disposed = false;
+    loadStage().then((StageClass) => {
+      if (disposed || !host.current) return;
+      startSequence(new StageClass(host.current, STEVE, "classic", { kind: "sword", material: "diamond", hand: "right", angle: getPreset("strike")!.itemAngle ?? 0 }, { height: 0.56, centerY: 0.6 }));
+    });
     return () => {
+      disposed = true;
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-      s.dispose();
+      stage.current?.dispose();
       stage.current = null;
     };
   }, []);
+
+  function startSequence(s: Stage) {
+    const strike = getPreset("strike")!;
+    const target: Pose = strike.pose;
+    stage.current = s;
+    let shown = 0;
+    s.onFrame = (t) => {
+      const p = progress.current;
+      shown += (p - shown) * 0.12;
+      const x = shown;
+      const explode = smooth(0.06, 0.32, x) * (1 - smooth(0.46, 0.7, x));
+      const assemble = smooth(0.5, 0.78, x);
+      const pose = lerpPose(restPose(), target, assemble);
+      pose.head.pitch += Math.sin(t * 1.3) * 0.8;
+      const framing = { height: 0.62 - 0.12 * explode - 0.14 * assemble, centerY: 0.56 + 0.1 * assemble };
+      return { pose, explode, item: smooth(0.6, 0.9, x), itemAngle: strike.itemAngle ?? 0, yaw: -28 + x * 52, framing };
+    };
+    s.render();
+    if (visible.current) s.play();
+  }
 
   return (
     <section className="sequence" ref={track} aria-label="From skin to blocks">
@@ -247,8 +275,11 @@ const FEATURE_POSES = ["wave", "victory", "run", "strike", "sit", "dab"];
 
 function PoseStrip() {
   const [urls, setUrls] = useState<string[]>([]);
-  const ref = useInView<HTMLDivElement>((v) => {
-    if (!v || urls.length) return;
+  const started = useRef(false);
+  const ref = useInView<HTMLDivElement>(async (v) => {
+    if (!v || started.current) return;
+    started.current = true;
+    const renderThumbnail = await loadThumbs();
     // small enough to do on the main thread
     const out: string[] = [];
     for (const id of FEATURE_POSES) {

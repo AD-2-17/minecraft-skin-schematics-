@@ -117,8 +117,8 @@ export class Figure {
     scaleM.makeScale(size, size, size);
     for (let i = 0; i < this.cubes.length; i++) {
       const q = this.cubes[i];
-      const k = e * (5 + 9 * q.r);
-      tmp.makeTranslation(q.x + q.dx * k, q.y + q.dy * k + e * 1.5, q.z + q.dz * k);
+      const k = e * (3.5 + 7 * q.r);
+      tmp.makeTranslation(q.x + q.dx * k, q.y + q.dy * k + e * 0.8, q.z + q.dz * k);
       tmp2.multiplyMatrices(this.segMatrices[q.seg] ?? this.segMatrices[1], tmp).multiply(scaleM);
       this.body.setMatrixAt(i, tmp2);
     }

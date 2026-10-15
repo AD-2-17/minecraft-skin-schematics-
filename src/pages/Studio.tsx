@@ -77,6 +77,8 @@ export default function Studio() {
   const view = useRef<StatueView | null>(null);
   const viewportEl = useRef<HTMLDivElement>(null);
   const framed = useRef<number[] | null>(null);
+  /** settings the current full-resolution build was made from */
+  const builtFor = useRef<Settings | null>(null);
   const history = useRef<{ past: Settings[]; future: Settings[]; committed: Settings }>({ past: [], future: [], committed: settings });
   const [, forceHistory] = useState(0);
 
@@ -120,6 +122,7 @@ export default function Studio() {
     let cancelled = false;
     engine.current.build(toStatueSettings(settings, scale)).then((b) => {
       if (cancelled || !b) return;
+      builtFor.current = live ? null : settings;
       setBuild(b);
       setBuilding(false);
       // Re-frame on first build, or when a committed change makes the statue much bigger or smaller.
@@ -306,7 +309,7 @@ export default function Studio() {
     setExporting(true);
     try {
       // Always export a fresh full-resolution build of the current settings.
-      const b = live ? await engine.current.build(toStatueSettings(settings)) : build;
+      const b = builtFor.current === settings && build ? build : await engine.current.build(toStatueSettings(settings));
       if (!b) throw new Error("Nothing to export yet.");
       const structure: Structure = {
         sx: b.sx,

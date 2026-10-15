@@ -73,7 +73,24 @@ export function Slider({
   const zero = defaultValue !== undefined ? ((defaultValue - min) / (max - min)) * 100 : 0;
   const last = useRef(value);
   last.current = value;
-  const commit = () => onCommit?.(last.current);
+  const dragging = useRef(false);
+  const commit = () => {
+    dragging.current = false;
+    onCommit?.(last.current);
+  };
+  // A drag can end outside the input; listen on the window so it always commits.
+  const startDrag = () => {
+    if (dragging.current) return;
+    dragging.current = true;
+    const end = () => {
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+      // let the final change event land first
+      setTimeout(commit, 0);
+    };
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+  };
   return (
     <div className="slider">
       <div className="slider-head">
@@ -99,9 +116,8 @@ export function Slider({
         value={value}
         style={{ ["--lo" as string]: `${Math.min(zero, pct)}%`, ["--hi" as string]: `${Math.max(zero, pct)}%` }}
         onChange={(e) => onChange(Number(e.target.value))}
-        onPointerUp={commit}
+        onPointerDown={startDrag}
         onKeyUp={commit}
-        onBlur={commit}
       />
     </div>
   );
